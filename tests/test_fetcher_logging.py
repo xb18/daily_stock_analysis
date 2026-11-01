@@ -96,6 +96,16 @@ class TestFetcherLogging(unittest.TestCase):
         self.assertIn("[数据源切换] 601006: [FailureFetcher] -> [SuccessFetcher]", log_text)
         self.assertIn("[数据源完成] 601006 使用 [SuccessFetcher] 获取成功:", log_text)
 
+    def test_manager_logs_terminal_failure_as_error(self):
+        manager = DataFetcherManager(fetchers=[_FailureFetcher()])
+
+        with self.assertLogs("data_provider.base", level="INFO") as captured:
+            with self.assertRaises(DataFetchError):
+                manager.get_daily_data("601006", start_date="2026-01-07", end_date="2026-03-08")
+
+        log_text = "\n".join(captured.output)
+        self.assertIn("ERROR:data_provider.base:[数据源终止] 601006 获取失败:", log_text)
+
     def test_manager_skips_builtin_fetchers_that_do_not_support_hk_daily(self):
         efinance = _RecordingFetcher("EfinanceFetcher", 0)
         pytdx = _RecordingFetcher("PytdxFetcher", 1)
