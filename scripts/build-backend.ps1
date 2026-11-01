@@ -150,6 +150,7 @@ $pyInstallerArgs = @(
   '--add-data', 'static;static',
   '--add-data', 'strategies;strategies',
   '--add-data', 'src/assets/share_image;src/assets/share_image',
+  '--add-data', 'src/services/screening/strategies;src/services/screening/strategies',
   '--add-data', "$akshareCalendarSource;akshare\file_fold",
   '--collect-data', 'litellm',
   '--collect-data', 'tiktoken',

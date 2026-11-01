@@ -43,6 +43,10 @@ class DesktopPackagingAssetsTestCase(unittest.TestCase):
         self.assertIn('"${akshare_calendar_source}:akshare/file_fold"', macos_script)
         self.assertIn('$akshareCalendarSource', windows_script)
         self.assertIn('"$akshareCalendarSource;akshare\\file_fold"', windows_script)
+        self.assertIn(
+            "'--add-data', 'src/services/screening/strategies;src/services/screening/strategies'",
+            windows_script,
+        )
         self.assertIn("_internal/akshare/file_fold/calendar.json", macos_script)
         self.assertIn("_internal\\akshare\\file_fold\\calendar.json", windows_script)
 
