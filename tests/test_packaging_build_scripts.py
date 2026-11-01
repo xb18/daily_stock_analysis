@@ -333,6 +333,7 @@ def test_macos_pyinstaller_command_preserves_real_bash_argv() -> None:
     result = subprocess.run(
         ["bash", "-c", 'set -euo pipefail\nROOT_DIR="$PWD"\n'
          'SCRIPT_DIR="$PWD/scripts"\nPYTHON_BIN="python with spaces"\n'
+         'akshare_calendar_source="/path/to/calendar.json"\n'
          + construction + '\nprintf "%s\\0" "${cmd[@]}"\n'],
         cwd=REPO_ROOT, capture_output=True, check=True,
     )

@@ -71,6 +71,15 @@ if (-not (Test-PythonCode -Python $pythonBin -Code "from py_mini_racer import Mi
   throw 'MiniRacer cannot execute JavaScript in the build environment.'
 }
 
+Write-Host 'Checking AkShare calendar data...'
+if (-not (Test-PythonCode -Python $pythonBin -Code "import akshare")) {
+  throw 'AkShare is not importable after installing requirements.'
+}
+$akshareCalendarSource = (& $pythonBin -c "import akshare, pathlib; print(pathlib.Path(akshare.__file__).parent / 'file_fold' / 'calendar.json'").Trim())
+if (-not (Test-Path $akshareCalendarSource -PathType Leaf)) {
+  throw "AkShare calendar data not found at $akshareCalendarSource."
+}
+
 if (Test-Path 'dist\backend') {
   Remove-Item -Recurse -Force 'dist\backend'
 }
@@ -141,10 +150,13 @@ $pyInstallerArgs = @(
   '--add-data', 'static;static',
   '--add-data', 'strategies;strategies',
   '--add-data', 'src/assets/share_image;src/assets/share_image',
+  '--add-data', "$akshareCalendarSource;akshare\file_fold",
   '--collect-data', 'litellm',
   '--collect-data', 'tiktoken',
   '--collect-data', 'akshare',
   '--collect-data', 'fxmacrodata_public',
+  '--hidden-import', 'fxmacrodata_public',
+  '--hidden-import', 'src.agent.factory',
   '--collect-all', 'py_mini_racer',
   '--collect-all', 'src.services.screening',
   '--collect-all', 'futu'
