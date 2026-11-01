@@ -83,7 +83,7 @@ def build_summary_message(summary_text: str) -> Dict[str, str]:
 
 def estimate_text_tokens(text: str, config: Any) -> int:
     """Estimate tokens deterministically enough for compression decisions."""
-    normalized_text = text or ""
+    normalized_text = str(text or "")
     # Keep context preparation offline-safe. LiteLLM's token counter may lazily
     # download a tiktoken encoding when its cache is empty, which can block an
     # offline run while this estimate is only used to choose compression.
