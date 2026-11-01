@@ -43,7 +43,7 @@ def test_cli_stocks_do_not_hide_other_stock_related_issues():
             ConfigIssue(
                 severity="warning",
                 message=f"{_MISSING_STOCK_MESSAGE} unrelated",
-                field="STOCK_GROUP_N",
+                field="STOCK_LIST",
             ),
         ]
     )

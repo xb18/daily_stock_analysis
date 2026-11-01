@@ -483,7 +483,9 @@ def _startup_config_warnings(config: Config, args: argparse.Namespace) -> List[s
     """Return startup config messages, minus those this invocation already resolves."""
     resolved_issues = set()
     if getattr(args, "stocks", None) or getattr(args, "portfolio", None):
-        resolved_issues.add(("STOCK_LIST", "未配置 STOCK_LIST。"))
+        resolved_issues.add(
+            ("STOCK_LIST", "未配置 STOCK_LIST。请设置至少一个股票代码，例如：600519,hk00700,AAPL。")
+        )
     if getattr(args, "no_notify", False):
         # 该 field 是“未配置任何通知渠道”这一条告警的归属字段
         resolved_issues.add(("WECHAT_WEBHOOK_URL", "未配置通知渠道，将不发送推送通知"))
@@ -491,7 +493,7 @@ def _startup_config_warnings(config: Config, args: argparse.Namespace) -> List[s
         issue.message
         for issue in config.validate_structured()
         if not any(
-            issue.field == field and issue.message.startswith(message)
+            issue.field == field and issue.message == message
             for field, message in resolved_issues
         )
     ]
