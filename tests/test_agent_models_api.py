@@ -4,6 +4,7 @@
 import asyncio
 import os
 import tempfile
+import threading
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -373,9 +374,11 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
                                agent_context_compression_enabled=False)
         config.is_agent_available = lambda: True
         run_requests = []
+        worker_threads = []
 
         def controlled_run(_backend, run_request):
             run_requests.append(run_request)
+            worker_threads.append(threading.get_ident())
             return AgentRunResult(success=True, final_answer="ok", backend="litellm", model="fixture")
 
         request = agent.ChatRequest(
@@ -387,12 +390,7 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             db = DatabaseManager(db_url=f"sqlite:///{directory}/chat.db")
             try:
-                # This test exercises skill propagation with a controlled
-                # in-process backend; keep it out of the sandbox's flaky
-                # worker-thread wakeup path, which is not under test here.
                 with patch("api.v1.endpoints.agent.get_config", return_value=config), patch(
-                    "api.v1.endpoints.agent._agent_has_configured_model", return_value=False,
-                ), patch(
                     "api.v1.endpoints.agent._build_executor", wraps=agent._build_executor,
                 ) as mock_build_executor, patch.object(LiteLLMAgentBackend, "run", controlled_run):
                     payload = asyncio.run(agent.agent_chat(
@@ -405,6 +403,7 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
 
         mock_build_executor.assert_called_once_with(config, [])
         self.assertEqual(len(run_requests), 1)
+        self.assertNotEqual(worker_threads[0], threading.get_ident())
         self.assertIn(resolve_skill_prompt_state(config, skills=[]).skill_instructions,
                       run_requests[0].system_prompt)
         self.assertNotIn(resolve_skill_prompt_state(config, skills=["ma_golden_cross"]).skill_instructions,
