@@ -387,7 +387,12 @@ class AgentSkillsEndpointTestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             db = DatabaseManager(db_url=f"sqlite:///{directory}/chat.db")
             try:
+                # This test exercises skill propagation with a controlled
+                # in-process backend; keep it out of the sandbox's flaky
+                # worker-thread wakeup path, which is not under test here.
                 with patch("api.v1.endpoints.agent.get_config", return_value=config), patch(
+                    "api.v1.endpoints.agent._agent_has_configured_model", return_value=False,
+                ), patch(
                     "api.v1.endpoints.agent._build_executor", wraps=agent._build_executor,
                 ) as mock_build_executor, patch.object(LiteLLMAgentBackend, "run", controlled_run):
                     payload = asyncio.run(agent.agent_chat(

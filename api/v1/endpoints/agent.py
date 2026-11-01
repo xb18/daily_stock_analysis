@@ -267,15 +267,30 @@ async def agent_chat(
     backend_id = _select_agent_chat_backend(config)
 
     session_id = request.session_id or str(uuid.uuid4())
+    loop = asyncio.get_running_loop()
+    run_in_worker = _agent_has_configured_model(config)
     
     try:
-        executor, turn, accepted, clarification = await asyncio.to_thread(
-            _prepare_chat_request, request, config, session_id, session_service,
-        )
-        if clarification is not None:
-            result = await asyncio.to_thread(_clarification_result, session_service, accepted, clarification, backend_id)
+        if run_in_worker:
+            executor, turn, accepted, clarification = await loop.run_in_executor(
+                None, _prepare_chat_request, request, config, session_id, session_service,
+            )
         else:
-            result = await asyncio.to_thread(executor.execute_turn, turn)
+            executor, turn, accepted, clarification = _prepare_chat_request(
+                request, config, session_id, session_service,
+            )
+        if clarification is not None:
+            if run_in_worker:
+                result = await loop.run_in_executor(
+                    None, _clarification_result, session_service, accepted, clarification, backend_id,
+                )
+            else:
+                result = _clarification_result(session_service, accepted, clarification, backend_id)
+        else:
+            if run_in_worker:
+                result = await loop.run_in_executor(None, executor.execute_turn, turn)
+            else:
+                result = executor.execute_turn(turn)
 
         return ChatResponse(
             success=result.success,
@@ -400,6 +415,13 @@ def _build_executor(config, skills: Optional[List[str]] = None):
     from src.agent.factory import build_agent_chat_executor
 
     return build_agent_chat_executor(config, skills=skills)
+
+
+def _agent_has_configured_model(config) -> bool:
+    """Return whether Chat work can reach a configured LiteLLM model route."""
+    from src.config import get_effective_agent_primary_model
+
+    return bool(get_effective_agent_primary_model(config))
 
 
 def _get_agent_chat_status(config) -> Dict[str, Any]:
@@ -545,6 +567,7 @@ async def agent_chat_stream(
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
     request_id = request.request_id or str(uuid.uuid4())
+    run_in_worker = _agent_has_configured_model(config)
 
     def progress_callback(event: dict):
         # Enrich tool events with display names
@@ -586,9 +609,14 @@ async def agent_chat_stream(
         fut = None
         try:
             try:
-                executor, turn, accepted, clarification = await asyncio.to_thread(
-                    _prepare_chat_request, request, config, session_id, session_service,
-                )
+                if run_in_worker:
+                    executor, turn, accepted, clarification = await loop.run_in_executor(
+                        None, _prepare_chat_request, request, config, session_id, session_service,
+                    )
+                else:
+                    executor, turn, accepted, clarification = _prepare_chat_request(
+                        request, config, session_id, session_service,
+                    )
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -616,13 +644,25 @@ async def agent_chat_stream(
             # Backend execution starts only after the accepted event has been
             # yielded, so Web state and server persistence share one commit point.
             if clarification is not None:
-                result = await asyncio.to_thread(_clarification_result, session_service, accepted, clarification, backend_id)
+                if run_in_worker:
+                    result = await loop.run_in_executor(
+                        None, _clarification_result, session_service, accepted, clarification, backend_id,
+                    )
+                else:
+                    result = _clarification_result(session_service, accepted, clarification, backend_id)
                 event = {"type": "done", "success": result.success, "content": result.content,
                          "error": None, "total_steps": 0, "session_id": session_id,
                          "backend": backend_id, "request_id": request_id, "error_code": None}
                 yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
                 return
-            fut = loop.run_in_executor(None, run_sync, executor, turn)
+            if run_in_worker:
+                fut = loop.run_in_executor(None, run_sync, executor, turn)
+            else:
+                # With no configured route, the backend is only usable as an
+                # in-process/test substitute; avoid a worker-thread wakeup that
+                # can be lost in that zero-I/O path.
+                run_sync(executor, turn)
+                fut = None
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=300.0)
