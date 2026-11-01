@@ -479,6 +479,21 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _startup_config_warnings(config: Config, args: argparse.Namespace) -> List[str]:
+    """Return startup config messages, minus those this invocation already resolves."""
+    resolved_fields = set()
+    if getattr(args, "stocks", None) or getattr(args, "portfolio", None):
+        resolved_fields.add("STOCK_LIST")
+    if getattr(args, "no_notify", False):
+        # 该 field 是“未配置任何通知渠道”这一条告警的归属字段
+        resolved_fields.add("WECHAT_WEBHOOK_URL")
+    return [
+        issue.message
+        for issue in config.validate_structured()
+        if issue.field not in resolved_fields
+    ]
+
+
 def _compute_trading_day_filter(
     config: Config,
     args: argparse.Namespace,
@@ -1717,8 +1732,7 @@ def main() -> int:
     logger.info("=" * 60)
 
     # 验证配置
-    warnings = config.validate()
-    for warning in warnings:
+    for warning in _startup_config_warnings(config, args):
         logger.warning(warning)
 
     if getattr(args, "check_notify", False):

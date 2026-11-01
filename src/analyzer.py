@@ -110,6 +110,13 @@ from src.market_structure_prompt import format_market_structure_prompt_section
 logger = logging.getLogger(__name__)
 
 
+def _describe_llm_result_model(configured_model: str, model_used: Optional[str]) -> str:
+    """Name the model that actually answered, and flag it when a fallback served the call."""
+    if not model_used or model_used == configured_model:
+        return configured_model
+    return f"{model_used}（配置模型 {configured_model}，已回退）"
+
+
 def _localized_text(language: Any, *, en: str, zh: str, ko: str) -> str:
     """Pick a deterministic fallback string for the report language (zh/en/ko)."""
     normalized = normalize_report_language(language)
@@ -4215,7 +4222,8 @@ Output strictly in the following JSON format. This is a complete Decision Dashbo
 
                 # 记录响应信息
                 logger.info(
-                    f"[LLM返回] {model_name} 响应成功, 耗时 {elapsed:.2f}s, 响应长度 {len(response_text)} 字符"
+                    f"[LLM返回] {_describe_llm_result_model(model_name, model_used)} 响应成功, "
+                    f"耗时 {elapsed:.2f}s, 响应长度 {len(response_text)} 字符"
                 )
                 if backend_id in LOCAL_CLI_GENERATION_BACKEND_IDS:
                     response_preview = redact_diagnostic_text(response_text, limit=300)

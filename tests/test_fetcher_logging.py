@@ -146,7 +146,7 @@ class TestFetcherLogging(unittest.TestCase):
         self.assertIn("Eastmoney 历史K线接口失败:", log_text)
         self.assertIn("endpoint=push2his.eastmoney.com/api/qt/stock/kline/get", log_text)
         self.assertIn("category=remote_disconnect", log_text)
-        self.assertIn("[EfinanceFetcher] 601006 获取失败:", log_text)
+        self.assertIn("WARNING:data_provider.base:[EfinanceFetcher] 601006 获取失败:", log_text)
 
 
 if __name__ == "__main__":
