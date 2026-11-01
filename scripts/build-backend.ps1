@@ -154,7 +154,7 @@ $pyInstallerArgs = @(
   '--collect-data', 'litellm',
   '--collect-data', 'tiktoken',
   '--collect-data', 'akshare',
-  '--collect-data', 'fxmacrodata_public',
+  '--collect-all', 'fxmacrodata_public',
   '--hidden-import', 'fxmacrodata_public',
   '--hidden-import', 'src.agent.factory',
   '--collect-all', 'py_mini_racer',

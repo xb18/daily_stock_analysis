@@ -93,10 +93,10 @@ def test_backend_build_collects_and_probes_miniracer(filename: str) -> None:
 def test_backend_build_collects_fxmacrodata_data_and_probes_tool_registry(filename: str) -> None:
     script = _read_text(REPO_ROOT / "scripts" / filename)
     if filename.endswith(".ps1"):
-        assert "'--collect-data', 'fxmacrodata_public'" in script
+        assert "'--collect-all', 'fxmacrodata_public'" in script
         assert "'src.agent.factory'" in script
     else:
-        assert "--collect-data fxmacrodata_public" in script
+        assert "--collect-all fxmacrodata_public" in script
         assert 'DSA_PACKAGED_IMPORT_PROBE="src.agent.factory"' in script
 
 

@@ -128,7 +128,7 @@ for module in "${hidden_imports[@]}"; do
 done
 
 pushd "${ROOT_DIR}" >/dev/null
-cmd=("${PYTHON_BIN}" -m PyInstaller --name stock_analysis --onedir --noconfirm --noconsole --runtime-hook "${SCRIPT_DIR}/pyinstaller_runtime_compat.py" --add-data "static:static" --add-data "strategies:strategies" --add-data "src/assets/share_image:src/assets/share_image" --add-data "${akshare_calendar_source}:akshare/file_fold" --collect-data litellm --collect-data tiktoken --collect-data akshare --collect-data fxmacrodata_public)
+cmd=("${PYTHON_BIN}" -m PyInstaller --name stock_analysis --onedir --noconfirm --noconsole --runtime-hook "${SCRIPT_DIR}/pyinstaller_runtime_compat.py" --add-data "static:static" --add-data "strategies:strategies" --add-data "src/assets/share_image:src/assets/share_image" --add-data "${akshare_calendar_source}:akshare/file_fold" --collect-data litellm --collect-data tiktoken --collect-data akshare --collect-all fxmacrodata_public)
 cmd+=("--collect-all" "src.services.screening")
 cmd+=("--collect-all" "futu")
 cmd+=("--collect-all" "py_mini_racer")
@@ -171,7 +171,7 @@ for module in src.services.screening.pipeline futu orjson py_mini_racer; do
 done
 
 # Building the agent tool registry reads the FXMacroData operation catalogue
-# bundled via --collect-data, so probe it in the packaged artifact as well.
+# bundled via --collect-all, so probe it in the packaged artifact as well.
 if DSA_PACKAGED_IMPORT_PROBE="src.agent.factory" "${packaged_entry}" >/tmp/dsa-packaged-import.log 2>&1; then
   cat /tmp/dsa-packaged-import.log
 else
