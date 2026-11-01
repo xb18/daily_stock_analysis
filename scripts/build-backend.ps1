@@ -175,6 +175,17 @@ if (!(Test-Path 'dist\stock_analysis')) {
   throw 'PyInstaller finished but dist\stock_analysis was not generated.'
 }
 
+# Keep the calendar at the path used by the frozen AkShare package even when
+# PyInstaller's package-data collection layout changes between versions.
+$packagedBuildRoot = 'dist\stock_analysis'
+$packagedDataRoot = $packagedBuildRoot
+if (Test-Path (Join-Path $packagedBuildRoot '_internal') -PathType Container) {
+  $packagedDataRoot = Join-Path $packagedBuildRoot '_internal'
+}
+$packagedAkshareData = Join-Path $packagedDataRoot 'akshare\file_fold'
+New-Item -ItemType Directory -Path $packagedAkshareData -Force | Out-Null
+Copy-Item -Path $akshareCalendarSource -Destination (Join-Path $packagedAkshareData 'calendar.json') -Force
+
 Copy-Item -Path 'dist\stock_analysis' -Destination 'dist\backend\stock_analysis' -Recurse -Force
 
 Write-Host 'Verifying packaged runtime imports...'

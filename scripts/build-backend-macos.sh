@@ -139,6 +139,16 @@ echo "Running: ${cmd[*]}"
 "${cmd[@]}"
 popd >/dev/null
 
+# Keep the calendar at the path used by the frozen AkShare package even when
+# PyInstaller's package-data collection layout changes between versions.
+packaged_build_root="${ROOT_DIR}/dist/stock_analysis"
+packaged_data_root="${packaged_build_root}"
+if [[ -d "${packaged_build_root}/_internal" ]]; then
+  packaged_data_root="${packaged_build_root}/_internal"
+fi
+mkdir -p "${packaged_data_root}/akshare/file_fold"
+cp "${akshare_calendar_source}" "${packaged_data_root}/akshare/file_fold/calendar.json"
+
 cp -R "${ROOT_DIR}/dist/stock_analysis" "${ROOT_DIR}/dist/backend/stock_analysis"
 
 packaged_root="${ROOT_DIR}/dist/backend/stock_analysis"

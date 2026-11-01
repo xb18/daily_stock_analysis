@@ -43,6 +43,8 @@ class DesktopPackagingAssetsTestCase(unittest.TestCase):
         self.assertIn('"${akshare_calendar_source}:akshare/file_fold"', macos_script)
         self.assertIn('$akshareCalendarSource', windows_script)
         self.assertIn('"$akshareCalendarSource;akshare\\file_fold"', windows_script)
+        self.assertIn('Copy-Item -Path $akshareCalendarSource', windows_script)
+        self.assertIn('cp "${akshare_calendar_source}"', macos_script)
         self.assertIn(
             "'--add-data', 'src/services/screening/strategies;src/services/screening/strategies'",
             windows_script,

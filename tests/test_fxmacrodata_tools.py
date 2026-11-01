@@ -6,7 +6,7 @@ import pytest
 
 try:
     import fxmacrodata_public
-except ModuleNotFoundError:
+except (ImportError, FileNotFoundError):
     fxmacrodata_public = None
 
 if fxmacrodata_public is None:
@@ -219,3 +219,24 @@ def test_missing_client_dependency_disables_tools_without_breaking_import():
     assert fxmacrodata_tools.ALL_FXMACRODATA_TOOLS == []
     assert build_fxmacrodata_tools() == []
     assert fxmacrodata_tool_names() == []
+
+
+def test_missing_client_package_data_is_treated_as_optional(monkeypatch):
+    import builtins
+    import importlib
+
+    original_import = builtins.__import__
+
+    def missing_package_data(name, *args, **kwargs):
+        if name == "fxmacrodata_public":
+            raise FileNotFoundError("operations.json")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", missing_package_data)
+    module = importlib.reload(fxmacrodata_tools)
+    try:
+        assert module.ALL_FXMACRODATA_TOOLS == []
+        assert module.build_fxmacrodata_tools() == []
+    finally:
+        monkeypatch.undo()
+        importlib.reload(fxmacrodata_tools)

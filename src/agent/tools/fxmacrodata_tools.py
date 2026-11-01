@@ -8,7 +8,7 @@ import os
 
 try:
     from fxmacrodata_public import FXMacroDataClient, list_operations
-except ModuleNotFoundError:  # The public client is optional for core analysis.
+except (ImportError, FileNotFoundError):  # Optional client or frozen package data.
     FXMacroDataClient = None
 
     def list_operations():
